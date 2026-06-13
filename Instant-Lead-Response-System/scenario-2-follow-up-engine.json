@@ -1,0 +1,396 @@
+{
+    "name": "[Client] - Follow-up Engine",
+    "flow": [
+        {
+            "id": 1,
+            "module": "google-sheets:searchRows",
+            "version": 2,
+            "parameters": {
+                "__IMTCONN__": null
+            },
+            "mapper": {
+                "mode": "select",
+                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                "sheetId": "Leads",
+                "tableFirstRow": "A1:N1",
+                "limit": 50,
+                "filter": [
+                    [
+                        {
+                            "a": "{{1.Status}}",
+                            "b": "WON",
+                            "o": "text:notequal"
+                        },
+                        {
+                            "a": "{{1.Status}}",
+                            "b": "CLOSED",
+                            "o": "text:notequal"
+                        },
+                        {
+                            "a": "{{1.`Next Follow-up`}}",
+                            "b": "{{formatDate(now; \"YYYY-MM-DD\")}}",
+                            "o": "date:lessequal"
+                        }
+                    ]
+                ]
+            },
+            "metadata": {
+                "designer": {
+                    "x": 0,
+                    "y": 0
+                },
+                "restore": {
+                    "parameters": {
+                        "__IMTCONN__": {
+                            "label": "My Google connection"
+                        },
+                        "spreadsheetId": {
+                            "label": "Leads"
+                        },
+                        "sheetId": {
+                            "label": "Leads"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 2,
+            "module": "builtin:BasicFeeder",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "array": "{{1.array}}"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 300,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "id": 3,
+            "module": "util:SetMultipleVariables2",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "scope": "roundtrip",
+                "variables": [
+                    {
+                        "name": "follow_up_count",
+                        "value": "{{if(isEmpty(2.`Follow-up Count`); 0; toNumber(2.`Follow-up Count`))}}"
+                    },
+                    {
+                        "name": "first_name",
+                        "value": "{{if(contains(2.`Full Name`; \" \"); trim(substring(2.`Full Name`; 0; indexOf(2.`Full Name`; \" \"))); trim(2.`Full Name`))}}"
+                    }
+                ]
+            },
+            "metadata": {
+                "designer": {
+                    "x": 600,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "id": 4,
+            "module": "builtin:BasicRouter",
+            "version": 1,
+            "mapper": null,
+            "metadata": {
+                "designer": {
+                    "x": 900,
+                    "y": 0
+                }
+            },
+            "routes": [
+                {
+                    "name": "Day 1 Follow-up",
+                    "flow": [
+                        {
+                            "id": 5,
+                            "module": "gmail:sendEmail",
+                            "version": 3,
+                            "parameters": {
+                                "account": null
+                            },
+                            "filter": {
+                                "name": "follow_up_count = 0",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{3.follow_up_count}}",
+                                            "b": "0",
+                                            "o": "number:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "to": [
+                                    "{{2.Email}}"
+                                ],
+                                "subject": "Following up on your enquiry, {{3.first_name}}",
+                                "html": "<p>Hi {{3.first_name}},</p><p>Just checking in \u2014 did you see our previous message about your enquiry regarding <strong>{{2.`Service Interest`}}</strong>?</p><p>Happy to help with a quick quote or answer any questions whenever you're ready.</p><p>Best,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": -250
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Gmail connection"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": 6,
+                            "module": "google-sheets:updateRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Leads",
+                                "rowNumber": "{{2.__IMTROWNUM__}}",
+                                "values": {
+                                    "Status": "CONTACTED",
+                                    "Last Contacted": "{{formatDate(now; \"YYYY-MM-DD HH:mm\")}}",
+                                    "Next Follow-up": "{{formatDate(addDays(now; 2); \"YYYY-MM-DD\")}}",
+                                    "Follow-up Count": "1",
+                                    "Notes": "{{2.Notes}} | Day 1 follow-up sent {{formatDate(now; \"YYYY-MM-DD HH:mm\")}}"
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1500,
+                                    "y": -250
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Leads"
+                                        },
+                                        "sheetId": {
+                                            "label": "Leads"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Day 3 Follow-up",
+                    "flow": [
+                        {
+                            "id": 7,
+                            "module": "gmail:sendEmail",
+                            "version": 3,
+                            "parameters": {
+                                "account": null
+                            },
+                            "filter": {
+                                "name": "follow_up_count = 1",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{3.follow_up_count}}",
+                                            "b": "1",
+                                            "o": "number:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "to": [
+                                    "{{2.Email}}"
+                                ],
+                                "subject": "Still interested in {{2.`Service Interest`}}, {{3.first_name}}?",
+                                "html": "<p>Hi {{3.first_name}},</p><p>Would you still like a quote for <strong>{{2.`Service Interest`}}</strong>? We can share options quickly \u2014 just reply to this email or give us a call.</p><p>Best,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": 0
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Gmail connection"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": 8,
+                            "module": "google-sheets:updateRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Leads",
+                                "rowNumber": "{{2.__IMTROWNUM__}}",
+                                "values": {
+                                    "Last Contacted": "{{formatDate(now; \"YYYY-MM-DD HH:mm\")}}",
+                                    "Next Follow-up": "{{formatDate(addDays(now; 4); \"YYYY-MM-DD\")}}",
+                                    "Follow-up Count": "2",
+                                    "Notes": "{{2.Notes}} | Day 3 follow-up sent {{formatDate(now; \"YYYY-MM-DD HH:mm\")}}"
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1500,
+                                    "y": 0
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Leads"
+                                        },
+                                        "sheetId": {
+                                            "label": "Leads"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Day 7 Follow-up (Final)",
+                    "flow": [
+                        {
+                            "id": 9,
+                            "module": "gmail:sendEmail",
+                            "version": 3,
+                            "parameters": {
+                                "account": null
+                            },
+                            "filter": {
+                                "name": "follow_up_count >= 2",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{3.follow_up_count}}",
+                                            "b": "2",
+                                            "o": "number:greaterequal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "to": [
+                                    "{{2.Email}}"
+                                ],
+                                "subject": "Closing your enquiry soon, {{3.first_name}}",
+                                "html": "<p>Hi {{3.first_name}},</p><p>We haven't heard back, so we'll be closing this enquiry soon. If you'd still like to go ahead with <strong>{{2.`Service Interest`}}</strong>, just reply to this email and we'll pick things back up right away.</p><p>Best,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": 250
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Gmail connection"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": 10,
+                            "module": "google-sheets:updateRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Leads",
+                                "rowNumber": "{{2.__IMTROWNUM__}}",
+                                "values": {
+                                    "Status": "CLOSED",
+                                    "Last Contacted": "{{formatDate(now; \"YYYY-MM-DD HH:mm\")}}",
+                                    "Follow-up Count": "3",
+                                    "Notes": "{{2.Notes}} | Day 7 final follow-up sent {{formatDate(now; \"YYYY-MM-DD HH:mm\")}}, lead closed (no response)"
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1500,
+                                    "y": 250
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Leads"
+                                        },
+                                        "sheetId": {
+                                            "label": "Leads"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "metadata": {
+        "instant": false,
+        "version": 1,
+        "scenario": {
+            "roundtrips": 1,
+            "maxErrors": 3,
+            "autoCommit": true,
+            "autoCommitTriggerLast": true,
+            "sequential": false,
+            "slots": null,
+            "confidential": false,
+            "dataloss": false,
+            "dlq": false,
+            "freshVariables": false
+        },
+        "designer": {
+            "orphans": []
+        },
+        "zone": "eu1.make.com",
+        "scheduling": {
+            "type": "indefinitely",
+            "interval": 1440
+        },
+        "notes": [
+            "FREE STACK: Google Sheets + Gmail only. No trigger module - set scenario schedule after import to run once daily (e.g. 09:00).",
+            "Replace REPLACE_WITH_SPREADSHEET_ID with the same sheet used in Scenario 1.",
+            "2.__IMTROWNUM__ is Make.com's standard field for the row number returned by Google Sheets 'Search Rows' (module 4.x/2.x connectors). If your connector version exposes it differently (e.g. '__ROW_NUMBER__' or a 'Row number' label in the dropdown), click into the Update Row module's rowNumber field and re-map it from the available output of module 2 via the UI.",
+            "A Day 1 enquiry that came in as 'Hot Lead = YES' should ideally be contacted by the owner directly well before this scheduled run - this engine is the safety net for leads the owner hasn't gotten to yet.",
+            "Free tier Make.com runs scenarios on a minimum 15-minute interval but for a daily scheduled scenario like this, 1 run/day uses minimal operations - well within the 1,000 ops/month free limit even with 50 leads processed."
+        ]
+    }
+}

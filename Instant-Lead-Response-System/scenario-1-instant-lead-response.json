@@ -1,0 +1,301 @@
+{
+    "name": "[Client] - Instant Lead Response",
+    "flow": [
+        {
+            "id": 1,
+            "module": "google-forms:watchResponses",
+            "version": 1,
+            "parameters": {
+                "__IMTCONN__": null
+            },
+            "mapper": {
+                "form": "REPLACE_WITH_FORM_ID"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 0,
+                    "y": 0
+                },
+                "restore": {
+                    "parameters": {
+                        "__IMTCONN__": {
+                            "label": "My Google connection"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 2,
+            "module": "util:SetMultipleVariables2",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "scope": "roundtrip",
+                "variables": [
+                    {
+                        "name": "lead_id",
+                        "value": "LD-{{formatDate(now; \"YYMMDD\")}}-{{random(1000;9999)}}"
+                    },
+                    {
+                        "name": "created_at",
+                        "value": "{{formatDate(now; \"YYYY-MM-DD HH:mm\")}}"
+                    },
+                    {
+                        "name": "first_name",
+                        "value": "{{if(contains(1.`Full Name`; \" \"); trim(substring(1.`Full Name`; 0; indexOf(1.`Full Name`; \" \"))); trim(1.`Full Name`))}}"
+                    }
+                ]
+            },
+            "metadata": {
+                "designer": {
+                    "x": 300,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "id": 3,
+            "module": "builtin:BasicRouter",
+            "version": 1,
+            "mapper": null,
+            "metadata": {
+                "designer": {
+                    "x": 600,
+                    "y": 0
+                }
+            },
+            "routes": [
+                {
+                    "name": "Hot Enquiry",
+                    "flow": [
+                        {
+                            "id": 4,
+                            "module": "util:SetVariable2",
+                            "version": 1,
+                            "parameters": {},
+                            "mapper": {
+                                "name": "lead_score",
+                                "scope": "roundtrip",
+                                "value": "9"
+                            },
+                            "filter": {
+                                "name": "Hot Keywords",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{lower(1.Message)}}",
+                                            "b": "urgent",
+                                            "o": "text:contains"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{lower(1.Message)}}",
+                                            "b": "today",
+                                            "o": "text:contains"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{lower(1.Message)}}",
+                                            "b": "asap",
+                                            "o": "text:contains"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{lower(1.Message)}}",
+                                            "b": "price",
+                                            "o": "text:contains"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{lower(1.Message)}}",
+                                            "b": "quote",
+                                            "o": "text:contains"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{lower(1.Message)}}",
+                                            "b": "available",
+                                            "o": "text:contains"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{lower(1.Message)}}",
+                                            "b": "book",
+                                            "o": "text:contains"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 900,
+                                    "y": -150
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Standard Enquiry",
+                    "flow": [
+                        {
+                            "id": 5,
+                            "module": "util:SetVariable2",
+                            "version": 1,
+                            "parameters": {},
+                            "mapper": {
+                                "name": "lead_score",
+                                "scope": "roundtrip",
+                                "value": "4"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 900,
+                                    "y": 150
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "module": "google-sheets:addRow",
+            "version": 2,
+            "parameters": {
+                "__IMTCONN__": null
+            },
+            "mapper": {
+                "mode": "select",
+                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                "sheetId": "Leads",
+                "values": {
+                    "Lead ID": "{{2.variables.lead_id}}",
+                    "Timestamp": "{{2.variables.created_at}}",
+                    "Full Name": "{{1.`Full Name`}}",
+                    "Email": "{{1.Email}}",
+                    "Phone": "{{1.Phone}}",
+                    "Service Interest": "{{1.`Service Needed`}}",
+                    "Message": "{{1.Message}}",
+                    "Lead Score": "{{if(3.routeName = \"Hot Enquiry\"; 4.lead_score; 5.lead_score)}}",
+                    "Hot Lead": "{{if(3.routeName = \"Hot Enquiry\"; \"YES\"; \"NO\")}}",
+                    "Status": "NEW",
+                    "Last Contacted": "{{2.variables.created_at}}",
+                    "Next Follow-up": "{{formatDate(addDays(now; 1); \"YYYY-MM-DD\")}}",
+                    "Follow-up Count": "0",
+                    "Notes": ""
+                }
+            },
+            "metadata": {
+                "designer": {
+                    "x": 1200,
+                    "y": 0
+                },
+                "restore": {
+                    "parameters": {
+                        "__IMTCONN__": {
+                            "label": "My Google connection"
+                        },
+                        "spreadsheetId": {
+                            "label": "Leads"
+                        },
+                        "sheetId": {
+                            "label": "Leads"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 7,
+            "module": "gmail:sendEmail",
+            "version": 3,
+            "parameters": {
+                "account": null
+            },
+            "mapper": {
+                "to": [
+                    "{{1.Email}}"
+                ],
+                "subject": "Thanks for reaching out, {{2.variables.first_name}}! \ud83d\udc4b",
+                "html": "<p>Hi {{2.variables.first_name}},</p><p>Thanks for getting in touch with [BUSINESS NAME]!</p><p>We've received your enquiry about <strong>{{1.`Service Needed`}}</strong> and someone from our team will get back to you shortly (usually within a few hours during business hours).</p><p>In the meantime, here's a quick question: <strong>what timeline are you working with?</strong> Reply to this email and let us know \u2014 it helps us prioritise and get you the right info faster.</p><p>Talk soon,<br>[OWNER NAME]<br>[BUSINESS NAME]<br>[PHONE NUMBER / WHATSAPP NUMBER]</p>"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 1500,
+                    "y": -100
+                },
+                "restore": {
+                    "parameters": {
+                        "account": {
+                            "label": "My Gmail connection"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 8,
+            "module": "gmail:sendEmail",
+            "version": 3,
+            "parameters": {
+                "account": null
+            },
+            "mapper": {
+                "to": [
+                    "[OWNER EMAIL ADDRESS]"
+                ],
+                "subject": "{{if(3.routeName = \"Hot Enquiry\"; \"\ud83d\udd25 NEW HOT LEAD: \"; \"New enquiry: \")}}{{1.`Full Name`}} - {{1.`Service Needed`}}",
+                "html": "<p><strong>New enquiry received{{if(3.routeName = \"Hot Enquiry\"; \" (marked HOT \ud83d\udd25)\"; \"\")}}</strong></p><ul><li>Name: {{1.`Full Name`}}</li><li>Email: {{1.Email}}</li><li>Phone: {{1.Phone}}</li><li>Service: {{1.`Service Needed`}}</li><li>Message: {{1.Message}}</li><li>Lead Score: {{if(3.routeName = \"Hot Enquiry\"; 4.lead_score; 5.lead_score)}}/10</li><li>Lead ID: {{2.variables.lead_id}}</li></ul><p>An automatic acknowledgement has already been sent to the lead. Follow up directly when you can \u2014 the sooner the better.</p>"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 1500,
+                    "y": 100
+                },
+                "restore": {
+                    "parameters": {
+                        "account": {
+                            "label": "My Gmail connection"
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "metadata": {
+        "instant": true,
+        "version": 1,
+        "scenario": {
+            "roundtrips": 1,
+            "maxErrors": 3,
+            "autoCommit": true,
+            "autoCommitTriggerLast": true,
+            "sequential": false,
+            "slots": null,
+            "confidential": false,
+            "dataloss": false,
+            "dlq": false,
+            "freshVariables": false
+        },
+        "designer": {
+            "orphans": []
+        },
+        "zone": "eu1.make.com",
+        "notes": [
+            "FREE STACK: Uses Google Forms, Google Sheets, and Gmail only - no paid connectors, no WhatsApp API, runs on Make.com free tier (1,000 ops/month).",
+            "Setup steps: 1) Create a Google Form with fields: Full Name, Email, Phone, Service Needed, Message. 2) Create a Google Sheet with a 'Leads' tab matching the column headers in this blueprint. 3) Replace REPLACE_WITH_FORM_ID and REPLACE_WITH_SPREADSHEET_ID. 4) Replace [BUSINESS NAME], [OWNER NAME], [OWNER EMAIL ADDRESS], [PHONE NUMBER / WHATSAPP NUMBER] placeholders. 5) Connect client's own Google account (Forms + Sheets + Gmail) - this keeps the automation running entirely on THEIR free Google account.",
+            "Hot keyword list (urgent, today, asap, price, quote, available, book) can be edited per client/niche.",
+            "Module 2 'first_name' extraction assumes 'Full Name' has at least a first and last name separated by a space; if only one name is given it still works (split returns the single word).",
+            "This is Scenario 1 of 2. Scenario 2 (Follow-up Engine) runs on a schedule and handles Day 1/3/7 follow-ups for leads still in NEW/CONTACTED status."
+        ]
+    }
+}

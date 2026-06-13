@@ -1,0 +1,159 @@
+{
+    "name": "[Client] - Appointment Logger",
+    "flow": [
+        {
+            "id": 1,
+            "module": "google-calendar:watchEvents",
+            "version": 1,
+            "parameters": {
+                "__IMTCONN__": null,
+                "calendar": "primary",
+                "watchTrigger": "created"
+            },
+            "mapper": {},
+            "metadata": {
+                "designer": {
+                    "x": 0,
+                    "y": 0
+                },
+                "restore": {
+                    "parameters": {
+                        "__IMTCONN__": {
+                            "label": "My Google connection"
+                        },
+                        "calendar": {
+                            "label": "My Calendar"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 2,
+            "module": "builtin:BasicRouter",
+            "version": 1,
+            "mapper": null,
+            "metadata": {
+                "designer": {
+                    "x": 300,
+                    "y": 0
+                }
+            },
+            "routes": [
+                {
+                    "name": "Has guest email (booking)",
+                    "flow": [
+                        {
+                            "id": 4,
+                            "module": "util:SetMultipleVariables2",
+                            "version": 1,
+                            "parameters": {},
+                            "mapper": {
+                                "scope": "roundtrip",
+                                "variables": [
+                                    {
+                                        "name": "guest_email",
+                                        "value": "{{if(1.attendees[1].organizer = true; 1.attendees[2].email; if(1.attendees[1].organizer = false; 1.attendees[1].email; 1.attendees[1].email))}}"
+                                    },
+                                    {
+                                        "name": "guest_name",
+                                        "value": "{{if(1.attendees[1].organizer = true; if(isEmpty(1.attendees[2].displayName); 1.attendees[2].email; 1.attendees[2].displayName); if(isEmpty(1.attendees[1].displayName); 1.attendees[1].email; 1.attendees[1].displayName))}}"
+                                    }
+                                ]
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 450,
+                                    "y": -100
+                                }
+                            }
+                        },
+                        {
+                            "id": 3,
+                            "module": "google-sheets:addRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "filter": {
+                                "name": "Guest email was determined",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{4.guest_email}}",
+                                            "o": "exist"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Appointments",
+                                "values": {
+                                    "Event ID": "{{1.id}}",
+                                    "Client Name": "{{4.guest_name}}",
+                                    "Client Email": "{{4.guest_email}}",
+                                    "Appointment Time": "{{formatDate(1.start.dateTime; \"YYYY-MM-DD HH:mm\")}}",
+                                    "Service": "{{1.summary}}",
+                                    "24h Reminder Sent": "NO",
+                                    "2h Reminder Sent": "NO",
+                                    "Status": "SCHEDULED",
+                                    "Notes": ""
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 600,
+                                    "y": -100
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Appointments"
+                                        },
+                                        "sheetId": {
+                                            "label": "Appointments"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "metadata": {
+        "instant": true,
+        "version": 1,
+        "scenario": {
+            "roundtrips": 1,
+            "maxErrors": 3,
+            "autoCommit": true,
+            "autoCommitTriggerLast": true,
+            "sequential": false,
+            "slots": null,
+            "confidential": false,
+            "dataloss": false,
+            "dlq": false,
+            "freshVariables": false
+        },
+        "designer": {
+            "orphans": []
+        },
+        "zone": "eu1.make.com",
+        "notes": [
+            "FREE STACK: Google Calendar + Google Sheets only.",
+            "This scenario watches the owner's primary Google Calendar for newly created events and logs any event that has a guest/attendee with an email address into the Appointments sheet.",
+            "Replace REPLACE_WITH_SPREADSHEET_ID with the Appointments sheet ID.",
+            "Works best if bookings are created via Google Calendar's built-in 'Appointment Schedules' / 'Booking pages' feature (free with any Google account), since these automatically add the booker as a guest with their email.",
+            "If the client books appointments differently (e.g. via a Google Form), use a Google Forms trigger + 'Create Event' action instead - happy to provide that variant on request.",
+            "1.attendees[1] is used (not [0]) because Make.com array indexing in mappers is 1-based. Module 4 now determines the guest dynamically: if the first attendee (attendees[1]) is the organizer, it falls back to attendees[2] for the guest; otherwise attendees[1] is the guest. This covers both common orderings Google Calendar returns, instead of assuming a fixed position.",
+            "If a booking has more than 2 attendees (e.g. the client cc's someone else), this logic still picks the first non-organizer attendee - additional guests are not logged. Edit module 4 if you need to capture multiple guest emails."
+        ]
+    }
+}

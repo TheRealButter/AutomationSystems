@@ -1,0 +1,379 @@
+{
+    "name": "[Client] - Appointment Reminder Sender",
+    "flow": [
+        {
+            "id": 1,
+            "module": "google-sheets:searchRows",
+            "version": 2,
+            "parameters": {
+                "__IMTCONN__": null
+            },
+            "mapper": {
+                "mode": "select",
+                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                "sheetId": "Appointments",
+                "tableFirstRow": "A1:I1",
+                "limit": 50,
+                "filter": [
+                    [
+                        {
+                            "a": "{{1.Status}}",
+                            "b": "SCHEDULED",
+                            "o": "text:equal"
+                        }
+                    ]
+                ]
+            },
+            "metadata": {
+                "designer": {
+                    "x": 0,
+                    "y": 0
+                },
+                "restore": {
+                    "parameters": {
+                        "__IMTCONN__": {
+                            "label": "My Google connection"
+                        },
+                        "spreadsheetId": {
+                            "label": "Appointments"
+                        },
+                        "sheetId": {
+                            "label": "Appointments"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 2,
+            "module": "builtin:BasicFeeder",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "array": "{{1.array}}"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 300,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "id": 3,
+            "module": "util:SetMultipleVariables2",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "scope": "roundtrip",
+                "variables": [
+                    {
+                        "name": "hours_until",
+                        "value": "{{round((toNumber(formatDate(parseDate(2.`Appointment Time`; \"YYYY-MM-DD HH:mm\"); \"X\")) - toNumber(formatDate(now; \"X\"))) / 3600; 1)}}"
+                    },
+                    {
+                        "name": "first_name",
+                        "value": "{{if(contains(2.`Client Name`; \" \"); trim(substring(2.`Client Name`; 0; indexOf(2.`Client Name`; \" \"))); trim(2.`Client Name`))}}"
+                    }
+                ]
+            },
+            "metadata": {
+                "designer": {
+                    "x": 600,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "id": 4,
+            "module": "builtin:BasicRouter",
+            "version": 1,
+            "mapper": null,
+            "metadata": {
+                "designer": {
+                    "x": 900,
+                    "y": 0
+                }
+            },
+            "routes": [
+                {
+                    "name": "24h Reminder",
+                    "flow": [
+                        {
+                            "id": 5,
+                            "module": "gmail:sendEmail",
+                            "version": 3,
+                            "parameters": {
+                                "account": null
+                            },
+                            "filter": {
+                                "name": "20-28h away, 24h reminder not yet sent",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{3.hours_until}}",
+                                            "b": "20",
+                                            "o": "number:greaterequal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{3.hours_until}}",
+                                            "b": "28",
+                                            "o": "number:lessequal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{2.`24h Reminder Sent`}}",
+                                            "b": "NO",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "to": [
+                                    "{{2.`Client Email`}}"
+                                ],
+                                "subject": "Reminder: your appointment tomorrow - {{2.Service}}",
+                                "html": "<p>Hi {{3.first_name}},</p><p>This is a friendly reminder that you have an appointment booked for <strong>{{2.Service}}</strong> on <strong>{{formatDate(parseDate(2.`Appointment Time`; \"YYYY-MM-DD HH:mm\"); \"dddd, DD MMM YYYY [at] HH:mm\")}}</strong>.</p><p>If you need to reschedule or cancel, please reply to this email or contact us as soon as possible so we can offer the slot to someone else.</p><p>Looking forward to seeing you!</p><p>[BUSINESS NAME]<br>[PHONE NUMBER / WHATSAPP NUMBER]</p>"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": -200
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Gmail connection"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": 6,
+                            "module": "google-sheets:updateRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Appointments",
+                                "rowNumber": "{{2.__IMTROWNUM__}}",
+                                "values": {
+                                    "24h Reminder Sent": "YES",
+                                    "Notes": "{{2.Notes}} | 24h reminder sent {{formatDate(now; \"YYYY-MM-DD HH:mm\")}}"
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1500,
+                                    "y": -200
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Appointments"
+                                        },
+                                        "sheetId": {
+                                            "label": "Appointments"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "2h Final Reminder",
+                    "flow": [
+                        {
+                            "id": 7,
+                            "module": "gmail:sendEmail",
+                            "version": 3,
+                            "parameters": {
+                                "account": null
+                            },
+                            "filter": {
+                                "name": "1.5-2.5h away, 2h reminder not yet sent",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{3.hours_until}}",
+                                            "b": "1.5",
+                                            "o": "number:greaterequal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{3.hours_until}}",
+                                            "b": "2.5",
+                                            "o": "number:lessequal"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{2.`2h Reminder Sent`}}",
+                                            "b": "NO",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "to": [
+                                    "{{2.`Client Email`}}"
+                                ],
+                                "subject": "See you soon! Appointment in 2 hours - {{2.Service}}",
+                                "html": "<p>Hi {{3.first_name}},</p><p>Just a quick reminder \u2014 your appointment for <strong>{{2.Service}}</strong> is coming up at <strong>{{formatDate(parseDate(2.`Appointment Time`; \"YYYY-MM-DD HH:mm\"); \"HH:mm\")}}</strong> today.</p><p>If anything's changed, please let us know as soon as possible.</p><p>See you soon!</p><p>[BUSINESS NAME]<br>[PHONE NUMBER / WHATSAPP NUMBER]</p>"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": 100
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Gmail connection"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": 8,
+                            "module": "google-sheets:updateRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Appointments",
+                                "rowNumber": "{{2.__IMTROWNUM__}}",
+                                "values": {
+                                    "2h Reminder Sent": "YES",
+                                    "Notes": "{{2.Notes}} | 2h reminder sent {{formatDate(now; \"YYYY-MM-DD HH:mm\")}}"
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1500,
+                                    "y": 100
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Appointments"
+                                        },
+                                        "sheetId": {
+                                            "label": "Appointments"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Mark Past Appointments Done",
+                    "flow": [
+                        {
+                            "id": 9,
+                            "module": "google-sheets:updateRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "filter": {
+                                "name": "Appointment time has passed",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{3.hours_until}}",
+                                            "b": "0",
+                                            "o": "number:less"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Appointments",
+                                "rowNumber": "{{2.__IMTROWNUM__}}",
+                                "values": {
+                                    "Status": "COMPLETED"
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": 400
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Appointments"
+                                        },
+                                        "sheetId": {
+                                            "label": "Appointments"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "metadata": {
+        "instant": false,
+        "version": 1,
+        "scenario": {
+            "roundtrips": 1,
+            "maxErrors": 3,
+            "autoCommit": true,
+            "autoCommitTriggerLast": true,
+            "sequential": false,
+            "slots": null,
+            "confidential": false,
+            "dataloss": false,
+            "dlq": false,
+            "freshVariables": false
+        },
+        "designer": {
+            "orphans": []
+        },
+        "zone": "eu1.make.com",
+        "scheduling": {
+            "type": "indefinitely",
+            "interval": 30
+        },
+        "notes": [
+            "FREE STACK: Google Sheets + Gmail only. No trigger module - set scenario schedule after import to run every 30 minutes.",
+            "Replace REPLACE_WITH_SPREADSHEET_ID, [BUSINESS NAME], [PHONE NUMBER / WHATSAPP NUMBER] placeholders.",
+            "How the timing windows work: running every 30 min, the '24h reminder' fires once when the appointment is between 20-28 hours away (wide window catches it regardless of exact run time), and the '2h reminder' fires when between 1.5-2.5 hours away. The 'Reminder Sent' flags prevent duplicate sends within these windows.",
+            "Running every 30 minutes on a sheet with up to 50 rows uses roughly 48 runs/day x ~3-4 ops = ~150 ops/day = ~4,500 ops/month - this EXCEEDS the Make free tier (1,000 ops/month) if the sheet is consistently busy. For low-volume solo businesses (a handful of bookings/week), actual ops will be much lower since most rows won't match any filter. If volume is high, switch this scenario's interval to hourly (60 min) - still catches both reminder windows reliably and roughly halves operations.",
+            "2.__IMTROWNUM__ is Make.com's standard field for the row number returned by Google Sheets 'Search Rows'. If your connector version exposes it differently, click into each Update Row module's rowNumber field and re-map it from module 2's available output via the UI.",
+            "This is Scenario 2 of 2. Scenario 1 (Appointment Logger) watches Google Calendar and populates the Appointments sheet automatically when a booking with a guest email is created."
+        ]
+    }
+}
