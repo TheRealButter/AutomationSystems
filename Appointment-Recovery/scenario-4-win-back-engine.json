@@ -1,0 +1,321 @@
+{
+    "name": "[Client] - Butter Code Appointment Recovery™ — Win-Back Engine",
+    "flow": [
+        {
+            "id": 1,
+            "module": "google-sheets:searchRows",
+            "version": 2,
+            "parameters": {
+                "__IMTCONN__": null
+            },
+            "mapper": {
+                "mode": "select",
+                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                "sheetId": "Appointments",
+                "tableFirstRow": "A1:N1",
+                "limit": 50,
+                "filter": [
+                    [
+                        {
+                            "a": "{{1.Status}}",
+                            "b": "COMPLETED",
+                            "o": "text:equal"
+                        },
+                        {
+                            "a": "{{1.`Win-Back Sent`}}",
+                            "b": "NO",
+                            "o": "text:equal"
+                        }
+                    ]
+                ]
+            },
+            "metadata": {
+                "designer": {
+                    "x": 0,
+                    "y": 0
+                },
+                "restore": {
+                    "parameters": {
+                        "__IMTCONN__": {
+                            "label": "My Google connection"
+                        },
+                        "spreadsheetId": {
+                            "label": "Appointments"
+                        },
+                        "sheetId": {
+                            "label": "Appointments"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 2,
+            "module": "builtin:BasicFeeder",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "array": "{{1.array}}"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 300,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "id": 3,
+            "module": "util:SetMultipleVariables2",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "scope": "roundtrip",
+                "variables": [
+                    {
+                        "name": "days_since_appointment",
+                        "value": "{{floor((toNumber(formatDate(now; \"X\")) - toNumber(formatDate(parseDate(2.`Appointment Time`; \"YYYY-MM-DD HH:mm\"); \"X\"))) / 86400)}}"
+                    },
+                    {
+                        "name": "first_name",
+                        "value": "{{if(contains(2.`Client Name`; \" \"); trim(substring(2.`Client Name`; 0; indexOf(2.`Client Name`; \" \"))); trim(2.`Client Name`))}}"
+                    }
+                ]
+            },
+            "metadata": {
+                "designer": {
+                    "x": 600,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "id": 4,
+            "module": "builtin:BasicRouter",
+            "version": 1,
+            "mapper": null,
+            "metadata": {
+                "designer": {
+                    "x": 900,
+                    "y": 0
+                }
+            },
+            "routes": [
+                {
+                    "name": "60-Day Win-Back",
+                    "flow": [
+                        {
+                            "id": 5,
+                            "module": "gmail:sendEmail",
+                            "version": 3,
+                            "parameters": {
+                                "account": null
+                            },
+                            "filter": {
+                                "name": "60-70 days since last appointment",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{3.days_since_appointment}}",
+                                            "b": "60",
+                                            "o": "number:greaterequal"
+                                        },
+                                        {
+                                            "a": "{{3.days_since_appointment}}",
+                                            "b": "70",
+                                            "o": "number:lessequal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "to": [
+                                    "{{2.`Client Email`}}"
+                                ],
+                                "subject": "We miss you, {{3.first_name}} — it's been a while 👋",
+                                "html": "<p>Hi {{3.first_name}},</p><p>It's been about {{3.days_since_appointment}} days since your last <strong>{{2.Service}}</strong> with us — we just wanted to check in.</p><p>We'd love to have you back. As a valued client, we're always happy to fit you in — just get in touch and we'll sort something out.</p><p>[PHONE NUMBER / WHATSAPP NUMBER]<br>[BOOKING LINK — optional]</p><p>Hope to see you soon!<br>[BUSINESS NAME]</p>"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": -150
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Gmail connection"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": 6,
+                            "module": "google-sheets:updateRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Appointments",
+                                "rowNumber": "{{2.__IMTROWNUM__}}",
+                                "values": {
+                                    "Win-Back Sent": "YES",
+                                    "Notes": "{{2.Notes}} | 60-day win-back email sent {{formatDate(now; \"YYYY-MM-DD\")}} ({{3.days_since_appointment}} days since appointment)"
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1500,
+                                    "y": -150
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Appointments"
+                                        },
+                                        "sheetId": {
+                                            "label": "Appointments"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "90-Day Final Win-Back",
+                    "flow": [
+                        {
+                            "id": 7,
+                            "module": "gmail:sendEmail",
+                            "version": 3,
+                            "parameters": {
+                                "account": null
+                            },
+                            "filter": {
+                                "name": "88-98 days since last appointment, win-back already sent",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{3.days_since_appointment}}",
+                                            "b": "88",
+                                            "o": "number:greaterequal"
+                                        },
+                                        {
+                                            "a": "{{3.days_since_appointment}}",
+                                            "b": "98",
+                                            "o": "number:lessequal"
+                                        },
+                                        {
+                                            "a": "{{2.`Win-Back Sent`}}",
+                                            "b": "YES",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "to": [
+                                    "{{2.`Client Email`}}"
+                                ],
+                                "subject": "One last message, {{3.first_name}} — still here if you need us",
+                                "html": "<p>Hi {{3.first_name}},</p><p>I reached out a little while ago and didn't hear back — no problem at all.</p><p>I just want to make sure you know we're still here whenever you're ready for your next <strong>{{2.Service}}</strong>. We'd love to have you back.</p><p>[PHONE NUMBER / WHATSAPP NUMBER]</p><p>Wishing you all the best,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": 150
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Gmail connection"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": 8,
+                            "module": "google-sheets:updateRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Appointments",
+                                "rowNumber": "{{2.__IMTROWNUM__}}",
+                                "values": {
+                                    "Status": "LAPSED",
+                                    "Notes": "{{2.Notes}} | 90-day final win-back sent {{formatDate(now; \"YYYY-MM-DD\")}} — marked LAPSED"
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1500,
+                                    "y": 150
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Appointments"
+                                        },
+                                        "sheetId": {
+                                            "label": "Appointments"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "metadata": {
+        "instant": false,
+        "version": 1,
+        "scenario": {
+            "roundtrips": 1,
+            "maxErrors": 3,
+            "autoCommit": true,
+            "autoCommitTriggerLast": true,
+            "sequential": false,
+            "slots": null,
+            "confidential": false,
+            "dataloss": false,
+            "dlq": false,
+            "freshVariables": false
+        },
+        "designer": {
+            "orphans": []
+        },
+        "zone": "eu1.make.com",
+        "scheduling": {
+            "type": "indefinitely",
+            "interval": 10080
+        },
+        "notes": [
+            "Butter Code Appointment Recovery™ V2 — Scenario 4 of 4.",
+            "FREE STACK: Google Sheets + Gmail. Set schedule to run weekly (10,080 minutes = 7 days) after import.",
+            "PURPOSE: Two-stage win-back for clients who haven't rebooked after 60+ days.",
+            "Stage 1 (60-70 days, Win-Back Sent=NO): sends a warm re-engagement message. Sets Win-Back Sent=YES.",
+            "Stage 2 (88-98 days, Win-Back Sent=YES): sends a final message. Sets Status=LAPSED — stops further win-back attempts.",
+            "Sequence: 6-week rebooking nudge (Scenario 3) → 60-day win-back (this scenario) → 90-day final → LAPSED.",
+            "Replace REPLACE_WITH_SPREADSHEET_ID, [PHONE NUMBER / WHATSAPP NUMBER], [BOOKING LINK], [OWNER NAME], [BUSINESS NAME].",
+            "tableFirstRow is A1:N1 (14 columns matching V2 Appointments sheet).",
+            "2.__IMTROWNUM__ is Make.com's standard row reference. Re-map if needed from module 2's output."
+        ]
+    }
+}
