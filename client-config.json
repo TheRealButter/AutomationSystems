@@ -1,0 +1,21 @@
+{
+    "_instructions": "Fill in every field below, then run: python3 setup.py",
+    "_note_spreadsheet_ids": "If all products share one Google Sheet (different tabs), fill in 'spreadsheet_id' and leave the per-product fields empty. If each product has its own sheet, leave 'spreadsheet_id' empty and fill in each per-product field.",
+
+    "business_name": "",
+    "owner_name": "",
+    "owner_email": "",
+    "phone_whatsapp": "",
+    "address_or_meeting_link": "",
+    "booking_link": "",
+    "bank_name": "",
+    "account_number": "",
+    "payment_link": "",
+
+    "google_form_id": "",
+
+    "spreadsheet_id": "",
+    "spreadsheet_id_leads": "",
+    "spreadsheet_id_appointments": "",
+    "spreadsheet_id_invoices": ""
+}
