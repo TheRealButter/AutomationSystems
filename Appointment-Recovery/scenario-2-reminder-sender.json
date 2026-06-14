@@ -1,5 +1,5 @@
 {
-    "name": "[Client] - Appointment Reminder Sender",
+    "name": "[Client] - Butter Code Appointment Recovery™ — Reminder Sender",
     "flow": [
         {
             "id": 1,
@@ -12,7 +12,7 @@
                 "mode": "select",
                 "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
                 "sheetId": "Appointments",
-                "tableFirstRow": "A1:I1",
+                "tableFirstRow": "A1:N1",
                 "limit": 50,
                 "filter": [
                     [
@@ -97,6 +97,190 @@
             },
             "routes": [
                 {
+                    "name": "7-Day Reminder",
+                    "flow": [
+                        {
+                            "id": 10,
+                            "module": "gmail:sendEmail",
+                            "version": 3,
+                            "parameters": {
+                                "account": null
+                            },
+                            "filter": {
+                                "name": "162-174h away, 7d reminder not yet sent",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{3.hours_until}}",
+                                            "b": "162",
+                                            "o": "number:greaterequal"
+                                        },
+                                        {
+                                            "a": "{{3.hours_until}}",
+                                            "b": "174",
+                                            "o": "number:lessequal"
+                                        },
+                                        {
+                                            "a": "{{2.`7d Reminder Sent`}}",
+                                            "b": "NO",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "to": [
+                                    "{{2.`Client Email`}}"
+                                ],
+                                "subject": "Your appointment next week — {{2.Service}} on {{formatDate(parseDate(2.`Appointment Time`; \"YYYY-MM-DD HH:mm\"); \"DD MMM\")}}",
+                                "html": "<p>Hi {{3.first_name}},</p><p>Just a heads-up — your appointment for <strong>{{2.Service}}</strong> is coming up next week on <strong>{{formatDate(parseDate(2.`Appointment Time`; \"YYYY-MM-DD HH:mm\"); \"dddd, DD MMM YYYY [at] HH:mm\")}}</strong>.</p><p>If you need to reschedule, please let us know as soon as possible:</p><p>[PHONE NUMBER / WHATSAPP NUMBER]</p><p>Looking forward to seeing you!<br>[BUSINESS NAME]</p>"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": -600
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Gmail connection"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": 11,
+                            "module": "google-sheets:updateRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Appointments",
+                                "rowNumber": "{{2.__IMTROWNUM__}}",
+                                "values": {
+                                    "7d Reminder Sent": "YES",
+                                    "Notes": "{{2.Notes}} | 7-day reminder sent {{formatDate(now; \"YYYY-MM-DD HH:mm\")}}"
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1500,
+                                    "y": -600
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Appointments"
+                                        },
+                                        "sheetId": {
+                                            "label": "Appointments"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "48h Reminder",
+                    "flow": [
+                        {
+                            "id": 12,
+                            "module": "gmail:sendEmail",
+                            "version": 3,
+                            "parameters": {
+                                "account": null
+                            },
+                            "filter": {
+                                "name": "44-52h away, 48h reminder not yet sent",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{3.hours_until}}",
+                                            "b": "44",
+                                            "o": "number:greaterequal"
+                                        },
+                                        {
+                                            "a": "{{3.hours_until}}",
+                                            "b": "52",
+                                            "o": "number:lessequal"
+                                        },
+                                        {
+                                            "a": "{{2.`48h Reminder Sent`}}",
+                                            "b": "NO",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "to": [
+                                    "{{2.`Client Email`}}"
+                                ],
+                                "subject": "2 days until your appointment — {{2.Service}}",
+                                "html": "<p>Hi {{3.first_name}},</p><p>Your appointment for <strong>{{2.Service}}</strong> is in 2 days on <strong>{{formatDate(parseDate(2.`Appointment Time`; \"YYYY-MM-DD HH:mm\"); \"dddd, DD MMM YYYY [at] HH:mm\")}}</strong>.</p><p>Need to reschedule? Contact us ASAP:</p><p>[PHONE NUMBER / WHATSAPP NUMBER]</p><p>See you soon!<br>[BUSINESS NAME]</p>"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": -350
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Gmail connection"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": 13,
+                            "module": "google-sheets:updateRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Appointments",
+                                "rowNumber": "{{2.__IMTROWNUM__}}",
+                                "values": {
+                                    "48h Reminder Sent": "YES",
+                                    "Notes": "{{2.Notes}} | 48h reminder sent {{formatDate(now; \"YYYY-MM-DD HH:mm\")}}"
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1500,
+                                    "y": -350
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Appointments"
+                                        },
+                                        "sheetId": {
+                                            "label": "Appointments"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
                     "name": "24h Reminder",
                     "flow": [
                         {
@@ -114,16 +298,12 @@
                                             "a": "{{3.hours_until}}",
                                             "b": "20",
                                             "o": "number:greaterequal"
-                                        }
-                                    ],
-                                    [
+                                        },
                                         {
                                             "a": "{{3.hours_until}}",
                                             "b": "28",
                                             "o": "number:lessequal"
-                                        }
-                                    ],
-                                    [
+                                        },
                                         {
                                             "a": "{{2.`24h Reminder Sent`}}",
                                             "b": "NO",
@@ -136,13 +316,13 @@
                                 "to": [
                                     "{{2.`Client Email`}}"
                                 ],
-                                "subject": "Reminder: your appointment tomorrow - {{2.Service}}",
-                                "html": "<p>Hi {{3.first_name}},</p><p>This is a friendly reminder that you have an appointment booked for <strong>{{2.Service}}</strong> on <strong>{{formatDate(parseDate(2.`Appointment Time`; \"YYYY-MM-DD HH:mm\"); \"dddd, DD MMM YYYY [at] HH:mm\")}}</strong>.</p><p>If you need to reschedule or cancel, please reply to this email or contact us as soon as possible so we can offer the slot to someone else.</p><p>Looking forward to seeing you!</p><p>[BUSINESS NAME]<br>[PHONE NUMBER / WHATSAPP NUMBER]</p>"
+                                "subject": "Reminder: your appointment tomorrow — {{2.Service}}",
+                                "html": "<p>Hi {{3.first_name}},</p><p>This is a friendly reminder that you have an appointment booked for <strong>{{2.Service}}</strong> on <strong>{{formatDate(parseDate(2.`Appointment Time`; \"YYYY-MM-DD HH:mm\"); \"dddd, DD MMM YYYY [at] HH:mm\")}}</strong>.</p><p>If you need to reschedule or cancel, please reply to this email or contact us as soon as possible so we can offer the slot to someone else.</p><p>Looking forward to seeing you!<br>[BUSINESS NAME]<br>[PHONE NUMBER / WHATSAPP NUMBER]</p>"
                             },
                             "metadata": {
                                 "designer": {
                                     "x": 1200,
-                                    "y": -200
+                                    "y": -100
                                 },
                                 "restore": {
                                     "parameters": {
@@ -173,7 +353,7 @@
                             "metadata": {
                                 "designer": {
                                     "x": 1500,
-                                    "y": -200
+                                    "y": -100
                                 },
                                 "restore": {
                                     "parameters": {
@@ -210,16 +390,12 @@
                                             "a": "{{3.hours_until}}",
                                             "b": "1.5",
                                             "o": "number:greaterequal"
-                                        }
-                                    ],
-                                    [
+                                        },
                                         {
                                             "a": "{{3.hours_until}}",
                                             "b": "2.5",
                                             "o": "number:lessequal"
-                                        }
-                                    ],
-                                    [
+                                        },
                                         {
                                             "a": "{{2.`2h Reminder Sent`}}",
                                             "b": "NO",
@@ -232,13 +408,13 @@
                                 "to": [
                                     "{{2.`Client Email`}}"
                                 ],
-                                "subject": "See you soon! Appointment in 2 hours - {{2.Service}}",
-                                "html": "<p>Hi {{3.first_name}},</p><p>Just a quick reminder \u2014 your appointment for <strong>{{2.Service}}</strong> is coming up at <strong>{{formatDate(parseDate(2.`Appointment Time`; \"YYYY-MM-DD HH:mm\"); \"HH:mm\")}}</strong> today.</p><p>If anything's changed, please let us know as soon as possible.</p><p>See you soon!</p><p>[BUSINESS NAME]<br>[PHONE NUMBER / WHATSAPP NUMBER]</p>"
+                                "subject": "See you soon! Appointment in 2 hours — {{2.Service}}",
+                                "html": "<p>Hi {{3.first_name}},</p><p>Just a quick reminder — your appointment for <strong>{{2.Service}}</strong> is coming up at <strong>{{formatDate(parseDate(2.`Appointment Time`; \"YYYY-MM-DD HH:mm\"); \"HH:mm\")}}</strong> today.</p><p>If anything's changed, please let us know as soon as possible.</p><p>See you soon!<br>[BUSINESS NAME]<br>[PHONE NUMBER / WHATSAPP NUMBER]</p>"
                             },
                             "metadata": {
                                 "designer": {
                                     "x": 1200,
-                                    "y": 100
+                                    "y": 150
                                 },
                                 "restore": {
                                     "parameters": {
@@ -269,7 +445,7 @@
                             "metadata": {
                                 "designer": {
                                     "x": 1500,
-                                    "y": 100
+                                    "y": 150
                                 },
                                 "restore": {
                                     "parameters": {
@@ -368,12 +544,14 @@
             "interval": 30
         },
         "notes": [
-            "FREE STACK: Google Sheets + Gmail only. No trigger module - set scenario schedule after import to run every 30 minutes.",
-            "Replace REPLACE_WITH_SPREADSHEET_ID, [BUSINESS NAME], [PHONE NUMBER / WHATSAPP NUMBER] placeholders.",
-            "How the timing windows work: running every 30 min, the '24h reminder' fires once when the appointment is between 20-28 hours away (wide window catches it regardless of exact run time), and the '2h reminder' fires when between 1.5-2.5 hours away. The 'Reminder Sent' flags prevent duplicate sends within these windows.",
-            "Running every 30 minutes on a sheet with up to 50 rows uses roughly 48 runs/day x ~3-4 ops = ~150 ops/day = ~4,500 ops/month - this EXCEEDS the Make free tier (1,000 ops/month) if the sheet is consistently busy. For low-volume solo businesses (a handful of bookings/week), actual ops will be much lower since most rows won't match any filter. If volume is high, switch this scenario's interval to hourly (60 min) - still catches both reminder windows reliably and roughly halves operations.",
-            "2.__IMTROWNUM__ is Make.com's standard field for the row number returned by Google Sheets 'Search Rows'. If your connector version exposes it differently, click into each Update Row module's rowNumber field and re-map it from module 2's available output via the UI.",
-            "This is Scenario 2 of 2. Scenario 1 (Appointment Logger) watches Google Calendar and populates the Appointments sheet automatically when a booking with a guest email is created."
+            "Butter Code Appointment Recovery™ V2 — Scenario 2 of 4.",
+            "FREE STACK: Google Sheets + Gmail. Set schedule to run every 30 minutes after import.",
+            "4-STAGE REMINDER SEQUENCE: 7-day (162-174h window), 48h (44-52h), 24h (20-28h), 2h (1.5-2.5h). Each reminder only fires once per appointment due to flag columns.",
+            "OPS NOTE: Running every 30 min against 50 rows uses ~150 ops/day. For clients with consistent high booking volume, switch to hourly (60 min) — still catches all 4 reminder windows reliably.",
+            "tableFirstRow is A1:N1 (14 columns matching V2 Appointments sheet).",
+            "Replace REPLACE_WITH_SPREADSHEET_ID, [BUSINESS NAME], [PHONE NUMBER / WHATSAPP NUMBER].",
+            "When Status is marked COMPLETED, Scenario 3 (Rebooking Engine) picks up the row 6 weeks later. Scenario 4 (Win-Back) picks up rows 60+ days after last appointment.",
+            "2.__IMTROWNUM__ is Make.com's standard row reference. Re-map if needed from module 2's output."
         ]
     }
 }
