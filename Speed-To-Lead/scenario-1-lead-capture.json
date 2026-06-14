@@ -1,5 +1,5 @@
 {
-    "name": "[Client] - Instant Lead Response",
+    "name": "[Client] - Butter Code Speed-To-Lead™ — Lead Capture",
     "flow": [
         {
             "id": 1,
@@ -80,7 +80,7 @@
                                 "value": "9"
                             },
                             "filter": {
-                                "name": "Hot Keywords",
+                                "name": "Hot Keywords (urgent intent)",
                                 "conditions": [
                                     [
                                         {
@@ -106,21 +106,14 @@
                                     [
                                         {
                                             "a": "{{lower(1.Message)}}",
-                                            "b": "price",
+                                            "b": "now",
                                             "o": "text:contains"
                                         }
                                     ],
                                     [
                                         {
                                             "a": "{{lower(1.Message)}}",
-                                            "b": "quote",
-                                            "o": "text:contains"
-                                        }
-                                    ],
-                                    [
-                                        {
-                                            "a": "{{lower(1.Message)}}",
-                                            "b": "available",
+                                            "b": "emergency",
                                             "o": "text:contains"
                                         }
                                     ],
@@ -136,14 +129,90 @@
                             "metadata": {
                                 "designer": {
                                     "x": 900,
-                                    "y": -150
+                                    "y": -250
                                 }
                             }
                         }
                     ]
                 },
                 {
-                    "name": "Standard Enquiry",
+                    "name": "Warm Enquiry",
+                    "flow": [
+                        {
+                            "id": 11,
+                            "module": "util:SetVariable2",
+                            "version": 1,
+                            "parameters": {},
+                            "mapper": {
+                                "name": "lead_score",
+                                "scope": "roundtrip",
+                                "value": "6"
+                            },
+                            "filter": {
+                                "name": "Warm Keywords (research/consideration intent)",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{lower(1.Message)}}",
+                                            "b": "price",
+                                            "o": "text:contains"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{lower(1.Message)}}",
+                                            "b": "quote",
+                                            "o": "text:contains"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{lower(1.Message)}}",
+                                            "b": "interested",
+                                            "o": "text:contains"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{lower(1.Message)}}",
+                                            "b": "looking",
+                                            "o": "text:contains"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{lower(1.Message)}}",
+                                            "b": "services",
+                                            "o": "text:contains"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{lower(1.Message)}}",
+                                            "b": "info",
+                                            "o": "text:contains"
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "a": "{{lower(1.Message)}}",
+                                            "b": "available",
+                                            "o": "text:contains"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 900,
+                                    "y": 0
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Cold Enquiry",
                     "flow": [
                         {
                             "id": 5,
@@ -153,12 +222,12 @@
                             "mapper": {
                                 "name": "lead_score",
                                 "scope": "roundtrip",
-                                "value": "4"
+                                "value": "3"
                             },
                             "metadata": {
                                 "designer": {
                                     "x": 900,
-                                    "y": 150
+                                    "y": 250
                                 }
                             }
                         }
@@ -185,8 +254,9 @@
                     "Phone": "{{1.Phone}}",
                     "Service Interest": "{{1.`Service Needed`}}",
                     "Message": "{{1.Message}}",
-                    "Lead Score": "{{if(3.routeName = \"Hot Enquiry\"; 4.lead_score; 5.lead_score)}}",
+                    "Lead Score": "{{if(3.routeName = \"Hot Enquiry\"; 4.lead_score; if(3.routeName = \"Warm Enquiry\"; 11.lead_score; 5.lead_score))}}",
                     "Hot Lead": "{{if(3.routeName = \"Hot Enquiry\"; \"YES\"; \"NO\")}}",
+                    "Lead Tier": "{{if(3.routeName = \"Hot Enquiry\"; \"Hot\"; if(3.routeName = \"Warm Enquiry\"; \"Warm\"; \"Cold\"))}}",
                     "Status": "NEW",
                     "Last Contacted": "{{2.variables.created_at}}",
                     "Next Follow-up": "{{formatDate(addDays(now; 1); \"YYYY-MM-DD\")}}",
@@ -225,8 +295,8 @@
                 "to": [
                     "{{1.Email}}"
                 ],
-                "subject": "Thanks for reaching out, {{2.variables.first_name}}! \ud83d\udc4b",
-                "html": "<p>Hi {{2.variables.first_name}},</p><p>Thanks for getting in touch with [BUSINESS NAME]!</p><p>We've received your enquiry about <strong>{{1.`Service Needed`}}</strong> and someone from our team will get back to you shortly (usually within a few hours during business hours).</p><p>In the meantime, here's a quick question: <strong>what timeline are you working with?</strong> Reply to this email and let us know \u2014 it helps us prioritise and get you the right info faster.</p><p>Talk soon,<br>[OWNER NAME]<br>[BUSINESS NAME]<br>[PHONE NUMBER / WHATSAPP NUMBER]</p>"
+                "subject": "Thanks for reaching out, {{2.variables.first_name}}! 👋",
+                "html": "<p>Hi {{2.variables.first_name}},</p><p>Thanks for getting in touch with [BUSINESS NAME]!</p><p>We've received your enquiry about <strong>{{1.`Service Needed`}}</strong> and someone from our team will be in contact shortly.</p><p>In the meantime, here's a quick question: <strong>what timeline are you working with?</strong> Reply to this email and let us know — it helps us prioritise and get you the right information faster.</p><p>Talk soon,<br>[OWNER NAME]<br>[BUSINESS NAME]<br>[PHONE NUMBER / WHATSAPP NUMBER]</p>"
             },
             "metadata": {
                 "designer": {
@@ -253,8 +323,8 @@
                 "to": [
                     "[OWNER EMAIL ADDRESS]"
                 ],
-                "subject": "{{if(3.routeName = \"Hot Enquiry\"; \"\ud83d\udd25 NEW HOT LEAD: \"; \"New enquiry: \")}}{{1.`Full Name`}} - {{1.`Service Needed`}}",
-                "html": "<p><strong>New enquiry received{{if(3.routeName = \"Hot Enquiry\"; \" (marked HOT \ud83d\udd25)\"; \"\")}}</strong></p><ul><li>Name: {{1.`Full Name`}}</li><li>Email: {{1.Email}}</li><li>Phone: {{1.Phone}}</li><li>Service: {{1.`Service Needed`}}</li><li>Message: {{1.Message}}</li><li>Lead Score: {{if(3.routeName = \"Hot Enquiry\"; 4.lead_score; 5.lead_score)}}/10</li><li>Lead ID: {{2.variables.lead_id}}</li></ul><p>An automatic acknowledgement has already been sent to the lead. Follow up directly when you can \u2014 the sooner the better.</p>"
+                "subject": "{{if(3.routeName = \"Hot Enquiry\"; \"🔥 HOT LEAD: \"; if(3.routeName = \"Warm Enquiry\"; \"🌡️ Warm Lead: \"; \"New Lead: \"))}}{{1.`Full Name`}} — {{1.`Service Needed`}}",
+                "html": "<p><strong>New enquiry received{{if(3.routeName = \"Hot Enquiry\"; \" — HOT LEAD 🔥\"; if(3.routeName = \"Warm Enquiry\"; \" — Warm Lead\"; \"\"))}}</strong></p><ul><li><strong>Name:</strong> {{1.`Full Name`}}</li><li><strong>Email:</strong> {{1.Email}}</li><li><strong>Phone:</strong> {{1.Phone}}</li><li><strong>Service:</strong> {{1.`Service Needed`}}</li><li><strong>Message:</strong> {{1.Message}}</li><li><strong>Lead Tier:</strong> {{if(3.routeName = \"Hot Enquiry\"; \"Hot\"; if(3.routeName = \"Warm Enquiry\"; \"Warm\"; \"Cold\"))}}</li><li><strong>Lead Score:</strong> {{if(3.routeName = \"Hot Enquiry\"; 4.lead_score; if(3.routeName = \"Warm Enquiry\"; 11.lead_score; 5.lead_score))}}/10</li><li><strong>Lead ID:</strong> {{2.variables.lead_id}}</li></ul><p>An automatic acknowledgement has been sent to the lead. Follow up personally as soon as possible — the faster you respond, the higher the conversion rate.</p>"
             },
             "metadata": {
                 "designer": {
@@ -291,11 +361,11 @@
         },
         "zone": "eu1.make.com",
         "notes": [
-            "FREE STACK: Uses Google Forms, Google Sheets, and Gmail only - no paid connectors, no WhatsApp API, runs on Make.com free tier (1,000 ops/month).",
-            "Setup steps: 1) Create a Google Form with fields: Full Name, Email, Phone, Service Needed, Message. 2) Create a Google Sheet with a 'Leads' tab matching the column headers in this blueprint. 3) Replace REPLACE_WITH_FORM_ID and REPLACE_WITH_SPREADSHEET_ID. 4) Replace [BUSINESS NAME], [OWNER NAME], [OWNER EMAIL ADDRESS], [PHONE NUMBER / WHATSAPP NUMBER] placeholders. 5) Connect client's own Google account (Forms + Sheets + Gmail) - this keeps the automation running entirely on THEIR free Google account.",
-            "Hot keyword list (urgent, today, asap, price, quote, available, book) can be edited per client/niche.",
-            "Module 2 'first_name' extraction assumes 'Full Name' has at least a first and last name separated by a space; if only one name is given it still works (split returns the single word).",
-            "This is Scenario 1 of 2. Scenario 2 (Follow-up Engine) runs on a schedule and handles Day 1/3/7 follow-ups for leads still in NEW/CONTACTED status."
+            "Butter Code Speed-To-Lead™ V2 — Scenario 1 of 3.",
+            "FREE STACK: Google Forms + Google Sheets + Gmail. Runs on Make.com free tier.",
+            "3-TIER SCORING: Hot (score 9) = urgent/today/asap/now/emergency/book. Warm (score 6) = price/quote/interested/looking/services/info/available. Cold (score 3) = all others. Customise keywords per client/industry.",
+            "Setup: 1) Create Google Form with fields: Full Name, Email, Phone, Service Needed, Message. 2) Create Leads sheet with 15-column header from leads-sheet-template.csv. 3) Replace REPLACE_WITH_FORM_ID, REPLACE_WITH_SPREADSHEET_ID, [BUSINESS NAME], [OWNER NAME], [OWNER EMAIL ADDRESS], [PHONE NUMBER / WHATSAPP NUMBER]. 4) Connect client's Google account (Forms + Sheets + Gmail). 5) Activate.",
+            "This is Scenario 1 of 3. Scenario 2 (Follow-up Engine) runs daily and handles Day 1/3/7/14/30 sequences. Scenario 3 (Lost Lead Recovery) runs quarterly and re-engages closed leads."
         ]
     }
 }

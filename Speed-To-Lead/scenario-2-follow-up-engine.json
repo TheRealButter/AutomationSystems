@@ -1,5 +1,5 @@
 {
-    "name": "[Client] - Follow-up Engine",
+    "name": "[Client] - Butter Code Speed-To-Lead™ — Follow-up Engine",
     "flow": [
         {
             "id": 1,
@@ -12,7 +12,7 @@
                 "mode": "select",
                 "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
                 "sheetId": "Leads",
-                "tableFirstRow": "A1:N1",
+                "tableFirstRow": "A1:O1",
                 "limit": 50,
                 "filter": [
                     [
@@ -133,12 +133,12 @@
                                     "{{2.Email}}"
                                 ],
                                 "subject": "Following up on your enquiry, {{3.first_name}}",
-                                "html": "<p>Hi {{3.first_name}},</p><p>Just checking in \u2014 did you see our previous message about your enquiry regarding <strong>{{2.`Service Interest`}}</strong>?</p><p>Happy to help with a quick quote or answer any questions whenever you're ready.</p><p>Best,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
+                                "html": "<p>Hi {{3.first_name}},</p><p>Just checking in — did you get a chance to look at our previous message about your enquiry regarding <strong>{{2.`Service Interest`}}</strong>?</p><p>Happy to help with a quick quote or answer any questions whenever you're ready. Just reply to this email.</p><p>Best,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
                             },
                             "metadata": {
                                 "designer": {
                                     "x": 1200,
-                                    "y": -250
+                                    "y": -500
                                 },
                                 "restore": {
                                     "parameters": {
@@ -172,7 +172,7 @@
                             "metadata": {
                                 "designer": {
                                     "x": 1500,
-                                    "y": -250
+                                    "y": -500
                                 },
                                 "restore": {
                                     "parameters": {
@@ -218,12 +218,12 @@
                                     "{{2.Email}}"
                                 ],
                                 "subject": "Still interested in {{2.`Service Interest`}}, {{3.first_name}}?",
-                                "html": "<p>Hi {{3.first_name}},</p><p>Would you still like a quote for <strong>{{2.`Service Interest`}}</strong>? We can share options quickly \u2014 just reply to this email or give us a call.</p><p>Best,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
+                                "html": "<p>Hi {{3.first_name}},</p><p>Would you still like to move forward with <strong>{{2.`Service Interest`}}</strong>? We can put together options quickly — just reply to this email or give us a call.</p><p>Best,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
                             },
                             "metadata": {
                                 "designer": {
                                     "x": 1200,
-                                    "y": 0
+                                    "y": -250
                                 },
                                 "restore": {
                                     "parameters": {
@@ -256,7 +256,7 @@
                             "metadata": {
                                 "designer": {
                                     "x": 1500,
-                                    "y": 0
+                                    "y": -250
                                 },
                                 "restore": {
                                     "parameters": {
@@ -276,7 +276,7 @@
                     ]
                 },
                 {
-                    "name": "Day 7 Follow-up (Final)",
+                    "name": "Day 7 Follow-up",
                     "flow": [
                         {
                             "id": 9,
@@ -286,13 +286,13 @@
                                 "account": null
                             },
                             "filter": {
-                                "name": "follow_up_count >= 2",
+                                "name": "follow_up_count = 2",
                                 "conditions": [
                                     [
                                         {
                                             "a": "{{3.follow_up_count}}",
                                             "b": "2",
-                                            "o": "number:greaterequal"
+                                            "o": "number:equal"
                                         }
                                     ]
                                 ]
@@ -301,13 +301,13 @@
                                 "to": [
                                     "{{2.Email}}"
                                 ],
-                                "subject": "Closing your enquiry soon, {{3.first_name}}",
-                                "html": "<p>Hi {{3.first_name}},</p><p>We haven't heard back, so we'll be closing this enquiry soon. If you'd still like to go ahead with <strong>{{2.`Service Interest`}}</strong>, just reply to this email and we'll pick things back up right away.</p><p>Best,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
+                                "subject": "Quick check-in re: {{2.`Service Interest`}}, {{3.first_name}}",
+                                "html": "<p>Hi {{3.first_name}},</p><p>Just a quick check-in on your interest in <strong>{{2.`Service Interest`}}</strong>. Sometimes timing just isn't right — no pressure at all.</p><p>If you'd like to revisit this, we're here. Reply whenever suits you.</p><p>Best,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
                             },
                             "metadata": {
                                 "designer": {
                                     "x": 1200,
-                                    "y": 250
+                                    "y": 0
                                 },
                                 "restore": {
                                     "parameters": {
@@ -331,16 +331,184 @@
                                 "sheetId": "Leads",
                                 "rowNumber": "{{2.__IMTROWNUM__}}",
                                 "values": {
-                                    "Status": "CLOSED",
                                     "Last Contacted": "{{formatDate(now; \"YYYY-MM-DD HH:mm\")}}",
+                                    "Next Follow-up": "{{formatDate(addDays(now; 7); \"YYYY-MM-DD\")}}",
                                     "Follow-up Count": "3",
-                                    "Notes": "{{2.Notes}} | Day 7 final follow-up sent {{formatDate(now; \"YYYY-MM-DD HH:mm\")}}, lead closed (no response)"
+                                    "Notes": "{{2.Notes}} | Day 7 follow-up sent {{formatDate(now; \"YYYY-MM-DD HH:mm\")}}"
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1500,
+                                    "y": 0
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Leads"
+                                        },
+                                        "sheetId": {
+                                            "label": "Leads"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Day 14 Follow-up",
+                    "flow": [
+                        {
+                            "id": 11,
+                            "module": "gmail:sendEmail",
+                            "version": 3,
+                            "parameters": {
+                                "account": null
+                            },
+                            "filter": {
+                                "name": "follow_up_count = 3",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{3.follow_up_count}}",
+                                            "b": "3",
+                                            "o": "number:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "to": [
+                                    "{{2.Email}}"
+                                ],
+                                "subject": "Before I close your file, {{3.first_name}}",
+                                "html": "<p>Hi {{3.first_name}},</p><p>I wanted to reach out one more time about your enquiry for <strong>{{2.`Service Interest`}}</strong>.</p><p>If now isn't the right time, that's completely fine — just let me know and I'll stop reaching out. But if you're still considering it and just haven't had a chance to reply, I'd love to help.</p><p>What would it take to move this forward?</p><p>Best,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": 250
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Gmail connection"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": 12,
+                            "module": "google-sheets:updateRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Leads",
+                                "rowNumber": "{{2.__IMTROWNUM__}}",
+                                "values": {
+                                    "Last Contacted": "{{formatDate(now; \"YYYY-MM-DD HH:mm\")}}",
+                                    "Next Follow-up": "{{formatDate(addDays(now; 16); \"YYYY-MM-DD\")}}",
+                                    "Follow-up Count": "4",
+                                    "Notes": "{{2.Notes}} | Day 14 follow-up sent {{formatDate(now; \"YYYY-MM-DD HH:mm\")}}"
                                 }
                             },
                             "metadata": {
                                 "designer": {
                                     "x": 1500,
                                     "y": 250
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Leads"
+                                        },
+                                        "sheetId": {
+                                            "label": "Leads"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Day 30 Follow-up (Final)",
+                    "flow": [
+                        {
+                            "id": 13,
+                            "module": "gmail:sendEmail",
+                            "version": 3,
+                            "parameters": {
+                                "account": null
+                            },
+                            "filter": {
+                                "name": "follow_up_count >= 4",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{3.follow_up_count}}",
+                                            "b": "4",
+                                            "o": "number:greaterequal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "to": [
+                                    "{{2.Email}}"
+                                ],
+                                "subject": "Closing your file, {{3.first_name}} — last message from me",
+                                "html": "<p>Hi {{3.first_name}},</p><p>I've reached out a few times about <strong>{{2.`Service Interest`}}</strong> and haven't heard back, so I'll close this for now and stop following up.</p><p>If circumstances change and you'd like to revisit this down the line, don't hesitate to get back in touch — we'd love to help.</p><p>All the best,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": 500
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Gmail connection"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": 14,
+                            "module": "google-sheets:updateRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Leads",
+                                "rowNumber": "{{2.__IMTROWNUM__}}",
+                                "values": {
+                                    "Status": "CLOSED",
+                                    "Last Contacted": "{{formatDate(now; \"YYYY-MM-DD HH:mm\")}}",
+                                    "Follow-up Count": "5",
+                                    "Notes": "{{2.Notes}} | Day 30 final follow-up sent {{formatDate(now; \"YYYY-MM-DD HH:mm\")}}, lead closed (no response)"
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1500,
+                                    "y": 500
                                 },
                                 "restore": {
                                     "parameters": {
@@ -386,11 +554,13 @@
             "interval": 1440
         },
         "notes": [
-            "FREE STACK: Google Sheets + Gmail only. No trigger module - set scenario schedule after import to run once daily (e.g. 09:00).",
-            "Replace REPLACE_WITH_SPREADSHEET_ID with the same sheet used in Scenario 1.",
-            "2.__IMTROWNUM__ is Make.com's standard field for the row number returned by Google Sheets 'Search Rows' (module 4.x/2.x connectors). If your connector version exposes it differently (e.g. '__ROW_NUMBER__' or a 'Row number' label in the dropdown), click into the Update Row module's rowNumber field and re-map it from the available output of module 2 via the UI.",
-            "A Day 1 enquiry that came in as 'Hot Lead = YES' should ideally be contacted by the owner directly well before this scheduled run - this engine is the safety net for leads the owner hasn't gotten to yet.",
-            "Free tier Make.com runs scenarios on a minimum 15-minute interval but for a daily scheduled scenario like this, 1 run/day uses minimal operations - well within the 1,000 ops/month free limit even with 50 leads processed."
+            "Butter Code Speed-To-Lead™ V2 — Scenario 2 of 3.",
+            "FREE STACK: Google Sheets + Gmail only. Set schedule to run once daily (e.g. 09:00 client's timezone) after import.",
+            "5-STAGE SEQUENCE: Day 1 (count=0) → Day 3 (count=1) → Day 7 (count=2) → Day 14 (count=3) → Day 30 Final/CLOSED (count≥4). WON and CLOSED leads are excluded.",
+            "Replace REPLACE_WITH_SPREADSHEET_ID with the same sheet used in Scenario 1. tableFirstRow is A1:O1 (15 columns — includes new Lead Tier column).",
+            "To mark a lead as converted: owner sets Status = WON in the sheet. This stops all follow-ups.",
+            "Leads closed by this engine (Day 30) are picked up by Scenario 3 (Lost Lead Recovery) after 60-90 days and re-engaged automatically.",
+            "2.__IMTROWNUM__ is Make.com's standard row reference from Google Sheets searchRows. If your connector exposes it differently, re-map it in each Update Row module via the UI."
         ]
     }
 }

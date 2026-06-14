@@ -1,5 +1,5 @@
 {
-    "name": "[Client] - Appointment Logger",
+    "name": "[Client] - Butter Code Appointment Recovery™ — Booking Logger",
     "flow": [
         {
             "id": 1,
@@ -58,6 +58,10 @@
                                     {
                                         "name": "guest_name",
                                         "value": "{{if(1.attendees[1].organizer = true; if(isEmpty(1.attendees[2].displayName); 1.attendees[2].email; 1.attendees[2].displayName); if(isEmpty(1.attendees[1].displayName); 1.attendees[1].email; 1.attendees[1].displayName))}}"
+                                    },
+                                    {
+                                        "name": "first_name",
+                                        "value": "{{if(1.attendees[1].organizer = true; if(contains(if(isEmpty(1.attendees[2].displayName); 1.attendees[2].email; 1.attendees[2].displayName); \" \"); trim(substring(if(isEmpty(1.attendees[2].displayName); 1.attendees[2].email; 1.attendees[2].displayName); 0; indexOf(if(isEmpty(1.attendees[2].displayName); 1.attendees[2].email; 1.attendees[2].displayName); \" \"))); trim(if(isEmpty(1.attendees[2].displayName); 1.attendees[2].email; 1.attendees[2].displayName))); if(contains(if(isEmpty(1.attendees[1].displayName); 1.attendees[1].email; 1.attendees[1].displayName); \" \"); trim(substring(if(isEmpty(1.attendees[1].displayName); 1.attendees[1].email; 1.attendees[1].displayName); 0; indexOf(if(isEmpty(1.attendees[1].displayName); 1.attendees[1].email; 1.attendees[1].displayName); \" \"))); trim(if(isEmpty(1.attendees[1].displayName); 1.attendees[1].email; 1.attendees[1].displayName)))))}}"
                                     }
                                 ]
                             },
@@ -96,9 +100,14 @@
                                     "Client Email": "{{4.guest_email}}",
                                     "Appointment Time": "{{formatDate(1.start.dateTime; \"YYYY-MM-DD HH:mm\")}}",
                                     "Service": "{{1.summary}}",
+                                    "7d Reminder Sent": "NO",
+                                    "48h Reminder Sent": "NO",
                                     "24h Reminder Sent": "NO",
                                     "2h Reminder Sent": "NO",
+                                    "Confirmation Sent": "YES",
                                     "Status": "SCHEDULED",
+                                    "Rebooking Sent": "NO",
+                                    "Win-Back Sent": "NO",
                                     "Notes": ""
                                 }
                             },
@@ -117,6 +126,34 @@
                                         },
                                         "sheetId": {
                                             "label": "Appointments"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": 5,
+                            "module": "gmail:sendEmail",
+                            "version": 3,
+                            "parameters": {
+                                "account": null
+                            },
+                            "mapper": {
+                                "to": [
+                                    "{{4.guest_email}}"
+                                ],
+                                "subject": "Booking confirmed: {{1.summary}} on {{formatDate(1.start.dateTime; \"DD MMM YYYY [at] HH:mm\")}} ✅",
+                                "html": "<p>Hi {{4.first_name}},</p><p>Your booking is confirmed! Here are your details:</p><ul><li><strong>Service:</strong> {{1.summary}}</li><li><strong>Date & Time:</strong> {{formatDate(1.start.dateTime; \"dddd, DD MMM YYYY [at] HH:mm\")}}</li><li><strong>Location / Link:</strong> [ADDRESS OR MEETING LINK]</li></ul><p>You'll receive a reminder 7 days before, 48 hours before, 24 hours before, and 2 hours before your appointment.</p><p>If you need to reschedule or cancel, please contact us as soon as possible so we can offer the slot to someone else:</p><p>[PHONE NUMBER / WHATSAPP NUMBER]<br>[BUSINESS NAME]</p><p>Looking forward to seeing you!</p>"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 900,
+                                    "y": -100
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Gmail connection"
                                         }
                                     }
                                 }
@@ -147,13 +184,13 @@
         },
         "zone": "eu1.make.com",
         "notes": [
-            "FREE STACK: Google Calendar + Google Sheets only.",
-            "This scenario watches the owner's primary Google Calendar for newly created events and logs any event that has a guest/attendee with an email address into the Appointments sheet.",
-            "Replace REPLACE_WITH_SPREADSHEET_ID with the Appointments sheet ID.",
-            "Works best if bookings are created via Google Calendar's built-in 'Appointment Schedules' / 'Booking pages' feature (free with any Google account), since these automatically add the booker as a guest with their email.",
-            "If the client books appointments differently (e.g. via a Google Form), use a Google Forms trigger + 'Create Event' action instead - happy to provide that variant on request.",
-            "1.attendees[1] is used (not [0]) because Make.com array indexing in mappers is 1-based. Module 4 now determines the guest dynamically: if the first attendee (attendees[1]) is the organizer, it falls back to attendees[2] for the guest; otherwise attendees[1] is the guest. This covers both common orderings Google Calendar returns, instead of assuming a fixed position.",
-            "If a booking has more than 2 attendees (e.g. the client cc's someone else), this logic still picks the first non-organizer attendee - additional guests are not logged. Edit module 4 if you need to capture multiple guest emails."
+            "Butter Code Appointment Recovery™ V2 — Scenario 1 of 4.",
+            "FREE STACK: Google Calendar + Google Sheets + Gmail.",
+            "This scenario watches the owner's primary Google Calendar for newly created events, logs any event with a guest/attendee email to the Appointments sheet, and immediately sends a booking confirmation email.",
+            "V2 SHEET: 14 columns — includes 7d Reminder Sent, 48h Reminder Sent, Confirmation Sent, Rebooking Sent, Win-Back Sent. Replace REPLACE_WITH_SPREADSHEET_ID.",
+            "Replace [ADDRESS OR MEETING LINK], [PHONE NUMBER / WHATSAPP NUMBER], [BUSINESS NAME] in the confirmation email.",
+            "Works best with Google Calendar Appointment Schedules (free) which auto-adds the booker as a guest. If the client uses a different booking method, adapt the trigger accordingly.",
+            "1.attendees[1] indexing is 1-based in Make.com. Module 4 determines the guest dynamically: if attendees[1] is the organizer it uses attendees[2], otherwise attendees[1]. This is Scenario 1 of 4."
         ]
     }
 }

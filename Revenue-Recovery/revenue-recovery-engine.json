@@ -1,5 +1,5 @@
 {
-    "name": "[Client] - Invoice Follow-up Reminder Engine",
+    "name": "[Client] - Butter Code Revenue Recovery™ — Collections Engine",
     "flow": [
         {
             "id": 1,
@@ -12,7 +12,7 @@
                 "mode": "select",
                 "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
                 "sheetId": "Invoices",
-                "tableFirstRow": "A1:K1",
+                "tableFirstRow": "A1:O1",
                 "limit": 50,
                 "filter": [
                     [
@@ -28,7 +28,7 @@
                         },
                         {
                             "a": "{{1.`Due Date`}}",
-                            "b": "{{formatDate(now; \"YYYY-MM-DD\")}}",
+                            "b": "{{formatDate(addDays(now; 4); \"YYYY-MM-DD\")}}",
                             "o": "date:less"
                         }
                     ]
@@ -82,8 +82,20 @@
                         "value": "{{floor((toNumber(formatDate(now; \"X\")) - toNumber(formatDate(parseDate(2.`Due Date`; \"YYYY-MM-DD\"); \"X\"))) / 86400)}}"
                     },
                     {
+                        "name": "days_until_due",
+                        "value": "{{floor((toNumber(formatDate(parseDate(2.`Due Date`; \"YYYY-MM-DD\"); \"X\")) - toNumber(formatDate(now; \"X\"))) / 86400)}}"
+                    },
+                    {
                         "name": "reminder_count",
                         "value": "{{if(isEmpty(2.`Reminder Count`); 0; toNumber(2.`Reminder Count`))}}"
+                    },
+                    {
+                        "name": "has_promised_date",
+                        "value": "{{if(isEmpty(2.`Promised Pay Date`); \"NO\"; \"YES\")}}"
+                    },
+                    {
+                        "name": "promise_missed",
+                        "value": "{{if(isEmpty(2.`Promised Pay Date`); \"NO\"; if(toNumber(formatDate(parseDate(2.`Promised Pay Date`; \"YYYY-MM-DD\"); \"X\")) < toNumber(formatDate(now; \"X\")); \"YES\"; \"NO\"))}}"
                     },
                     {
                         "name": "first_name",
@@ -111,6 +123,193 @@
             },
             "routes": [
                 {
+                    "name": "Pre-Due Reminder (3 days before)",
+                    "flow": [
+                        {
+                            "id": 13,
+                            "module": "gmail:sendEmail",
+                            "version": 3,
+                            "parameters": {
+                                "account": null
+                            },
+                            "filter": {
+                                "name": "Due in 1-3 days, pre-due reminder not yet sent",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{3.days_until_due}}",
+                                            "b": "1",
+                                            "o": "number:greaterequal"
+                                        },
+                                        {
+                                            "a": "{{3.days_until_due}}",
+                                            "b": "3",
+                                            "o": "number:lessequal"
+                                        },
+                                        {
+                                            "a": "{{2.`Pre-Due Reminder Sent`}}",
+                                            "b": "",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "to": [
+                                    "{{2.`Client Email`}}"
+                                ],
+                                "subject": "Friendly reminder: Invoice {{2.`Invoice ID`}} due in {{3.days_until_due}} days",
+                                "html": "<p>Hi {{3.first_name}},</p><p>Just a friendly heads-up — invoice <strong>{{2.`Invoice ID`}}</strong> for <strong>{{2.Description}}</strong> (R{{2.Amount}}) is due on <strong>{{formatDate(parseDate(2.`Due Date`; \"YYYY-MM-DD\"); \"DD MMM YYYY\")}}</strong>.</p><p>Please arrange payment before or on that date. If you have any questions about the invoice, feel free to get in touch.</p><p>Payment can be made via:<br>EFT: [BANK NAME], Account: [ACCOUNT NUMBER], Ref: {{2.`Invoice ID`}}<br>[PAYMENT LINK — Ozow / PayFast — optional]</p><p>Thanks,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": -600
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Gmail connection"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": 14,
+                            "module": "google-sheets:updateRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Invoices",
+                                "rowNumber": "{{2.__IMTROWNUM__}}",
+                                "values": {
+                                    "Pre-Due Reminder Sent": "{{formatDate(now; \"YYYY-MM-DD\")}}",
+                                    "Last Reminder Sent": "{{formatDate(now; \"YYYY-MM-DD\")}}",
+                                    "Notes": "{{2.Notes}} | Pre-due reminder sent {{formatDate(now; \"YYYY-MM-DD\")}} (due in {{3.days_until_due}} days)"
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1500,
+                                    "y": -600
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Invoices"
+                                        },
+                                        "sheetId": {
+                                            "label": "Invoices"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Promise-to-Pay Missed",
+                    "flow": [
+                        {
+                            "id": 15,
+                            "module": "gmail:sendEmail",
+                            "version": 3,
+                            "parameters": {
+                                "account": null
+                            },
+                            "filter": {
+                                "name": "Promised pay date has passed, not yet paid",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{3.has_promised_date}}",
+                                            "b": "YES",
+                                            "o": "text:equal"
+                                        },
+                                        {
+                                            "a": "{{3.promise_missed}}",
+                                            "b": "YES",
+                                            "o": "text:equal"
+                                        },
+                                        {
+                                            "a": "{{3.reminder_count}}",
+                                            "b": "4",
+                                            "o": "number:less"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "to": [
+                                    "{{2.`Client Email`}}"
+                                ],
+                                "subject": "Payment not received — Invoice {{2.`Invoice ID`}} (promised {{2.`Promised Pay Date`}})",
+                                "html": "<p>Hi {{3.first_name}},</p><p>We noted that you planned to settle invoice <strong>{{2.`Invoice ID`}}</strong> for <strong>{{2.Description}}</strong> (R{{2.Amount}}) by <strong>{{formatDate(parseDate(2.`Promised Pay Date`; \"YYYY-MM-DD\"); \"DD MMM YYYY\")}}</strong>, but we haven't received payment yet.</p><p>Could you let us know when we can expect this, or if anything has changed? We're happy to discuss a revised arrangement if needed.</p><p>Payment options:<br>EFT: [BANK NAME], Account: [ACCOUNT NUMBER], Ref: {{2.`Invoice ID`}}<br>[PAYMENT LINK — optional]</p><p>Thanks,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1200,
+                                    "y": -350
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Gmail connection"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": 16,
+                            "module": "google-sheets:updateRow",
+                            "version": 2,
+                            "parameters": {
+                                "__IMTCONN__": null
+                            },
+                            "mapper": {
+                                "mode": "select",
+                                "spreadsheetId": "REPLACE_WITH_SPREADSHEET_ID",
+                                "sheetId": "Invoices",
+                                "rowNumber": "{{2.__IMTROWNUM__}}",
+                                "values": {
+                                    "Status": "OVERDUE",
+                                    "Last Reminder Sent": "{{formatDate(now; \"YYYY-MM-DD\")}}",
+                                    "Reminder Count": "{{toNumber(2.`Reminder Count`) + 1}}",
+                                    "Notes": "{{2.Notes}} | Promise-to-pay follow-up sent {{formatDate(now; \"YYYY-MM-DD\")}} (promised {{2.`Promised Pay Date`}}, still unpaid)"
+                                }
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 1500,
+                                    "y": -350
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "My Google connection"
+                                        },
+                                        "spreadsheetId": {
+                                            "label": "Invoices"
+                                        },
+                                        "sheetId": {
+                                            "label": "Invoices"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
                     "name": "First Reminder (3+ days overdue)",
                     "flow": [
                         {
@@ -128,9 +327,7 @@
                                             "a": "{{3.days_overdue}}",
                                             "b": "3",
                                             "o": "number:greaterequal"
-                                        }
-                                    ],
-                                    [
+                                        },
                                         {
                                             "a": "{{3.reminder_count}}",
                                             "b": "0",
@@ -144,12 +341,12 @@
                                     "{{2.`Client Email`}}"
                                 ],
                                 "subject": "Friendly reminder: Invoice {{2.`Invoice ID`}}",
-                                "html": "<p>Hi {{3.first_name}},</p><p>Just a friendly reminder that invoice <strong>{{2.`Invoice ID`}}</strong> for <strong>{{2.Description}}</strong> (R{{2.Amount}}) was due on {{formatDate(parseDate(2.`Due Date`; \"YYYY-MM-DD\"); \"DD MMM YYYY\")}}.</p><p>If you've already paid, please disregard this message \u2014 and thank you! If not, you can settle it whenever convenient. Let us know if you have any questions about the invoice.</p><p>Thanks,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
+                                "html": "<p>Hi {{3.first_name}},</p><p>Just a friendly reminder that invoice <strong>{{2.`Invoice ID`}}</strong> for <strong>{{2.Description}}</strong> (R{{2.Amount}}) was due on {{formatDate(parseDate(2.`Due Date`; \"YYYY-MM-DD\"); \"DD MMM YYYY\")}}.</p><p>If you've already paid, please disregard this message — and thank you! If not, you can settle it whenever convenient. Let us know if you have any questions.</p><p>Payment options:<br>EFT: [BANK NAME], Account: [ACCOUNT NUMBER], Ref: {{2.`Invoice ID`}}<br>[PAYMENT LINK — optional]</p><p>Thanks,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
                             },
                             "metadata": {
                                 "designer": {
                                     "x": 1200,
-                                    "y": -300
+                                    "y": -100
                                 },
                                 "restore": {
                                     "parameters": {
@@ -182,7 +379,7 @@
                             "metadata": {
                                 "designer": {
                                     "x": 1500,
-                                    "y": -300
+                                    "y": -100
                                 },
                                 "restore": {
                                     "parameters": {
@@ -219,9 +416,7 @@
                                             "a": "{{3.days_overdue}}",
                                             "b": "7",
                                             "o": "number:greaterequal"
-                                        }
-                                    ],
-                                    [
+                                        },
                                         {
                                             "a": "{{3.reminder_count}}",
                                             "b": "1",
@@ -235,12 +430,12 @@
                                     "{{2.`Client Email`}}"
                                 ],
                                 "subject": "Second reminder: Invoice {{2.`Invoice ID`}} now {{3.days_overdue}} days overdue",
-                                "html": "<p>Hi {{3.first_name}},</p><p>This is a follow-up on invoice <strong>{{2.`Invoice ID`}}</strong> for <strong>{{2.Description}}</strong> (R{{2.Amount}}), which was due on {{formatDate(parseDate(2.`Due Date`; \"YYYY-MM-DD\"); \"DD MMM YYYY\")}} and is now {{3.days_overdue}} days overdue.</p><p>Could you let us know when we can expect payment, or flag if there's an issue we can help resolve? We're happy to arrange a payment plan if needed.</p><p>Thanks,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
+                                "html": "<p>Hi {{3.first_name}},</p><p>This is a follow-up on invoice <strong>{{2.`Invoice ID`}}</strong> for <strong>{{2.Description}}</strong> (R{{2.Amount}}), which was due on {{formatDate(parseDate(2.`Due Date`; \"YYYY-MM-DD\"); \"DD MMM YYYY\")}} and is now {{3.days_overdue}} days overdue.</p><p>Could you let us know when we can expect payment, or flag if there's an issue we can help resolve? We're happy to discuss a payment arrangement if needed.</p><p>Payment options:<br>EFT: [BANK NAME], Account: [ACCOUNT NUMBER], Ref: {{2.`Invoice ID`}}<br>[PAYMENT LINK — optional]</p><p>Thanks,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
                             },
                             "metadata": {
                                 "designer": {
                                     "x": 1200,
-                                    "y": 0
+                                    "y": 150
                                 },
                                 "restore": {
                                     "parameters": {
@@ -273,7 +468,7 @@
                             "metadata": {
                                 "designer": {
                                     "x": 1500,
-                                    "y": 0
+                                    "y": 150
                                 },
                                 "restore": {
                                     "parameters": {
@@ -310,9 +505,7 @@
                                             "a": "{{3.days_overdue}}",
                                             "b": "14",
                                             "o": "number:greaterequal"
-                                        }
-                                    ],
-                                    [
+                                        },
                                         {
                                             "a": "{{3.reminder_count}}",
                                             "b": "2",
@@ -325,13 +518,13 @@
                                 "to": [
                                     "{{2.`Client Email`}}"
                                 ],
-                                "subject": "Final reminder: Invoice {{2.`Invoice ID`}} - {{3.days_overdue}} days overdue",
-                                "html": "<p>Hi {{3.first_name}},</p><p>We still haven't received payment for invoice <strong>{{2.`Invoice ID`}}</strong> for <strong>{{2.Description}}</strong> (R{{2.Amount}}), now {{3.days_overdue}} days overdue (originally due {{formatDate(parseDate(2.`Due Date`; \"YYYY-MM-DD\"); \"DD MMM YYYY\")}}).</p><p>Please could you arrange payment as soon as possible, or get in touch so we can sort out a plan together. We'd really appreciate it.</p><p>Thanks,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
+                                "subject": "Final reminder: Invoice {{2.`Invoice ID`}} — {{3.days_overdue}} days overdue",
+                                "html": "<p>Hi {{3.first_name}},</p><p>We still haven't received payment for invoice <strong>{{2.`Invoice ID`}}</strong> for <strong>{{2.Description}}</strong> (R{{2.Amount}}), now {{3.days_overdue}} days overdue (originally due {{formatDate(parseDate(2.`Due Date`; \"YYYY-MM-DD\"); \"DD MMM YYYY\")}}).</p><p>Please arrange payment as soon as possible, or get in touch so we can work out a plan together.</p><p>Payment options:<br>EFT: [BANK NAME], Account: [ACCOUNT NUMBER], Ref: {{2.`Invoice ID`}}<br>[PAYMENT LINK — optional]</p><p>Thanks,<br>[OWNER NAME]<br>[BUSINESS NAME]</p>"
                             },
                             "metadata": {
                                 "designer": {
                                     "x": 1200,
-                                    "y": 300
+                                    "y": 400
                                 },
                                 "restore": {
                                     "parameters": {
@@ -364,7 +557,7 @@
                             "metadata": {
                                 "designer": {
                                     "x": 1500,
-                                    "y": 300
+                                    "y": 400
                                 },
                                 "restore": {
                                     "parameters": {
@@ -384,7 +577,7 @@
                     ]
                 },
                 {
-                    "name": "Owner Alert (30+ days overdue)",
+                    "name": "Escalation Alert (30+ days overdue)",
                     "flow": [
                         {
                             "id": 11,
@@ -394,16 +587,14 @@
                                 "account": null
                             },
                             "filter": {
-                                "name": "30+ days overdue, 3 reminders sent, not yet flagged",
+                                "name": "30+ days overdue, 3 reminders sent",
                                 "conditions": [
                                     [
                                         {
                                             "a": "{{3.days_overdue}}",
                                             "b": "30",
                                             "o": "number:greaterequal"
-                                        }
-                                    ],
-                                    [
+                                        },
                                         {
                                             "a": "{{3.reminder_count}}",
                                             "b": "3",
@@ -416,13 +607,14 @@
                                 "to": [
                                     "[OWNER EMAIL ADDRESS]"
                                 ],
-                                "subject": "\u26a0\ufe0f Invoice {{2.`Invoice ID`}} is {{3.days_overdue}} days overdue - needs attention",
-                                "html": "<p><strong>Invoice {{2.`Invoice ID`}} is now seriously overdue.</strong></p><ul><li>Client: {{2.`Client Name`}} ({{2.`Client Email`}})</li><li>Description: {{2.Description}}</li><li>Amount: R{{2.Amount}}</li><li>Due date: {{formatDate(parseDate(2.`Due Date`; \"YYYY-MM-DD\"); \"DD MMM YYYY\")}}</li><li>Days overdue: {{3.days_overdue}}</li><li>Automated reminders sent: 3</li></ul><p>This client hasn't responded to 3 automated reminders. Consider a personal call or escalation.</p>"
+                                "cc": "{{if(isEmpty(2.`Manager Email`); \"\"; 2.`Manager Email`)}}{{if(isEmpty(2.`Finance Email`); \"\"; if(isEmpty(2.`Manager Email`); 2.`Finance Email`; \", \" + 2.`Finance Email`))}}",
+                                "subject": "⚠️ Invoice {{2.`Invoice ID`}} is {{3.days_overdue}} days overdue — needs immediate attention",
+                                "html": "<p><strong>Invoice {{2.`Invoice ID`}} requires your immediate attention.</strong></p><ul><li><strong>Client:</strong> {{2.`Client Name`}} ({{2.`Client Email`}})</li><li><strong>Description:</strong> {{2.Description}}</li><li><strong>Amount:</strong> R{{2.Amount}}</li><li><strong>Due Date:</strong> {{formatDate(parseDate(2.`Due Date`; \"YYYY-MM-DD\"); \"DD MMM YYYY\")}}</li><li><strong>Days Overdue:</strong> {{3.days_overdue}}</li><li><strong>Automated Reminders Sent:</strong> 3</li></ul><p>This client has not responded to 3 automated reminders. Consider a personal phone call or formal escalation.</p><p>The automated reminder sequence has now stopped. Please follow up manually.</p>"
                             },
                             "metadata": {
                                 "designer": {
                                     "x": 1200,
-                                    "y": 600
+                                    "y": 650
                                 },
                                 "restore": {
                                     "parameters": {
@@ -448,13 +640,13 @@
                                 "values": {
                                     "Status": "ESCALATED",
                                     "Reminder Count": "4",
-                                    "Notes": "{{2.Notes}} | Owner alerted {{formatDate(now; \"YYYY-MM-DD\")}} - {{3.days_overdue}} days overdue, needs manual follow-up"
+                                    "Notes": "{{2.Notes}} | Owner/manager alerted {{formatDate(now; \"YYYY-MM-DD\")}} — {{3.days_overdue}} days overdue, needs manual follow-up"
                                 }
                             },
                             "metadata": {
                                 "designer": {
                                     "x": 1500,
-                                    "y": 600
+                                    "y": 650
                                 },
                                 "restore": {
                                     "parameters": {
@@ -500,13 +692,16 @@
             "interval": 1440
         },
         "notes": [
-            "FREE STACK: Google Sheets + Gmail only. No trigger module - set scenario schedule after import to run once daily (e.g. 08:00).",
-            "Replace REPLACE_WITH_SPREADSHEET_ID with the Invoices sheet ID, and [OWNER NAME], [BUSINESS NAME], [OWNER EMAIL ADDRESS] placeholders.",
-            "Workflow: owner manually adds a row to the Invoices sheet when a quote/invoice is sent (Status = SENT, Reminder Count = 0). This scenario takes over from there.",
-            "Reminder ladder: Day 3 (1st gentle reminder) -> Day 7 (2nd reminder) -> Day 14 (final reminder) -> Day 30 (owner alert, marks ESCALATED so it stops auto-emailing the client).",
-            "2.__IMTROWNUM__ is Make.com's standard field for the row number returned by Google Sheets 'Search Rows'. If your connector version exposes it differently (e.g. '__ROW_NUMBER__' or a 'Row number' label in the dropdown), click into each Update Row module's rowNumber field and re-map it from module 2's available output via the UI.",
-            "When the client pays, the owner should manually set Status = PAID in the sheet - this stops all further reminders for that row.",
-            "Can be sold standalone (own sheet) or as an add-on module sharing infrastructure with the Instant Lead Response System (same Make account, same Gmail connection, separate sheet/tab)."
+            "Butter Code Revenue Recovery™ V2 — Collections Engine.",
+            "FREE STACK: Google Sheets + Gmail. Set schedule to run once daily (e.g. 08:00) after import.",
+            "6-STAGE LADDER: Pre-Due (1-3 days before) → 1st Overdue (Day 3) → 2nd Overdue (Day 7) → Final (Day 14) → Escalation (Day 30). Plus: Promise-to-Pay missed follow-up.",
+            "PRE-DUE: Filter catches invoices due within the next 4 days. Pre-Due Reminder Sent is set to the date sent — empty string filter detects unsent. Only fires once per invoice.",
+            "PROMISE-TO-PAY: Owner fills in 'Promised Pay Date' column when a client commits to a date. If that date passes without payment, an automated follow-up fires. Owner must update Status=PAID to stop reminders.",
+            "ESCALATION: Owner + optional Manager Email + Finance Email are notified at Day 30 via CC. Leave Manager Email and Finance Email blank if not applicable.",
+            "tableFirstRow is A1:O1 (15 columns matching V2 Invoices sheet). Replace REPLACE_WITH_SPREADSHEET_ID.",
+            "Replace [OWNER NAME], [BUSINESS NAME], [OWNER EMAIL ADDRESS], [BANK NAME], [ACCOUNT NUMBER], and optionally [PAYMENT LINK] in each email template.",
+            "When client pays: owner sets Status=PAID in the sheet — this stops all further reminders.",
+            "2.__IMTROWNUM__ is Make.com's standard row reference. Re-map if needed from module 2's output."
         ]
     }
 }
